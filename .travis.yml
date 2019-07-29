@@ -56,6 +56,6 @@ install:
 before_script:
   flake8
 script:
-  coverage run --source=clickhouse_driver setup.py test
+  coverage run setup.py test
 after_success:
   coveralls
