@@ -179,6 +179,55 @@ Of course for `INSERT ... SELECT` queries data is not needed:
 
 ClickHouse will execute this query like a usual `SELECT` query.
 
+Inserting data from CSV file
+----------------------------
+
+Let's assume you hav following data in CSV file.
+
+    .. code-block::
+
+        $ cat /tmp/data.csv
+        time,order,qty
+        2019-08-01 15:23:14,New order1,5
+        2019-08-05 09:14:45,New order2,3
+        2019-08-13 12:20:32,New order3,7
+
+You can insert it into ClickHouse in the following way:
+
+
+    .. code-block:: python
+
+        >>> from csv import DictReader
+        >>> from datetime import datetime
+        >>>
+        >>> from clickhouse_driver import Client
+        >>>
+        >>>
+        >>> def iter_csv(filename):
+        ...     converters = {
+        ...         'qty': int,
+        ...         'time': lambda x: datetime.strptime(x, '%Y-%m-%d %H:%M:%S')
+        ...     }
+        ...
+        ...     with open(filename, 'r') as f:
+        ...         reader = DictReader(f)
+        ...         for line in reader:
+        ...             yield {k: (converters[k](v) if k in converters else v) for k, v in line.items()}
+        ...
+        >>> client = Client('localhost', port=9001)
+        >>>
+        >>> client.execute(
+        ...     'CREATE TABLE IF NOT EXISTS data_csv '
+        ...     '('
+        ...         'time DateTime, '
+        ...         'order String, '
+        ...         'qty Int32'
+        ...     ') Engine = Memory'
+        ... )
+        >>> []
+        >>> client.execute('INSERT INTO data_csv VALUES', iter_csv('/tmp/data.csv'))
+
+
 DDL
 ---
 
